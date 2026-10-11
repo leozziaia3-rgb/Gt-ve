@@ -328,6 +328,59 @@ export default function App() {
     };
   }, []);
 
+  // Desktop Keyboard Controller & Shortcuts (WASD / Arrows / Space / B / F)
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (!engineRef.current) return;
+
+      if (e.code === 'KeyB') {
+        e.preventDefault();
+        engineRef.current.toggleBoxCall();
+      } else if (e.code === 'KeyF') {
+        e.preventDefault();
+        engineRef.current.toggleDRS();
+      } else if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        engineRef.current.inputs.throttle = 1.0;
+      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        engineRef.current.inputs.brake = 1.0;
+        engineRef.current.inputs.drs = false;
+        engineRef.current.physics.isDrsOpen = false;
+      } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+        engineRef.current.inputs.steering = -1.0;
+      } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+        engineRef.current.inputs.steering = 1.0;
+      } else if (e.code === 'Space') {
+        engineRef.current.inputs.handbrake = true;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!engineRef.current) return;
+      if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        engineRef.current.inputs.throttle = 0;
+      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        engineRef.current.inputs.brake = 0;
+      } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+        if (engineRef.current.inputs.steering < 0) engineRef.current.inputs.steering = 0;
+      } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+        if (engineRef.current.inputs.steering > 0) engineRef.current.inputs.steering = 0;
+      } else if (e.code === 'Space') {
+        engineRef.current.inputs.handbrake = false;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [hasStarted]);
+
   const handleToggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       const el = document.documentElement;

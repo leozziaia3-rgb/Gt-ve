@@ -9,7 +9,7 @@
  */
 
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { Camera, Flame, Pause, Trophy, Wrench, AlertTriangle, Disc, Maximize, Minimize, Check, Wind, LayoutGrid, Lock } from 'lucide-react';
+import { Camera, Flame, Pause, Trophy, Wrench, AlertTriangle, Disc, Maximize, Minimize, Check, Wind, LayoutGrid, Lock, Radio } from 'lucide-react';
 import { GameTelemetry, RacingGameEngine } from '../game/RacingGameEngine';
 import { TIRE_COMPOUNDS, TireCompoundType } from '../game/physics/TireCompound';
 import { getCircuit } from '../game/circuits/CircuitRegistry';
@@ -126,13 +126,17 @@ export const HUD = React.memo<HUDProps>(({
 
       // 2. Throttled React state update for slower-frequency UI elements (tire wear, leaderboard, banners)
       const now = performance.now();
-      const stateHash = `${t.lapCount}_${t.pitPhase}_${t.isDrifting}_${t.isDrsOpen}_${t.hasAnyPuncture}_${t.isDamageLimiterActive}_${t.isTireCliffActive}_${t.tireWheelspinActive}_${t.tireCompound}_${t.nextPitTireCompound}`;
+      const stateHash = `${t.lapCount}_${t.pitPhase}_${t.isDrifting}_${t.isDrsOpen}_${t.hasAnyPuncture}_${t.isDamageLimiterActive}_${t.isTireCliffActive}_${t.tireWheelspinActive}_${t.tireCompound}_${t.nextPitTireCompound}_${t.isBoxRequested}_${t.isPreparedPitStop}_${t.radioMessage || ''}`;
       
       const significantChange = stateHash !== lastStateHashRef.current;
+      const isUrgentUserAction = significantChange && (
+        lastStateHashRef.current.includes(`_${!t.isBoxRequested}_`) ||
+        lastStateHashRef.current.includes(`_${!t.isDrsOpen}_`)
+      );
       const timeElapsed = now - lastStateUpdateRef.current > 330; // 3 Hz
-      const minThrottlePassed = now - lastStateUpdateRef.current > 120;
+      const minThrottlePassed = now - lastStateUpdateRef.current > 100;
 
-      if ((significantChange && minThrottlePassed) || timeElapsed) {
+      if (isUrgentUserAction || (significantChange && minThrottlePassed) || timeElapsed) {
         lastStateUpdateRef.current = now;
         lastStateHashRef.current = stateHash;
         setLiveTelemetry({ ...t });
@@ -447,19 +451,27 @@ export const HUD = React.memo<HUDProps>(({
             {onRequestPitStop && (
               <button
                 onClick={onRequestPitStop}
-                title="Entrar a Boxes / Cambio de Neumáticos"
+                title="Avisar al equipo / Entrar a Boxes para cambio de neumáticos"
                 disabled={telemetryData.isInPit}
-                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all active:scale-95 flex items-center gap-1 font-bold ${
+                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all active:scale-95 flex items-center gap-1.5 font-bold ${
                   telemetryData.isInPit
                     ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 cursor-default'
                     : hasPuncture
                     ? 'bg-red-600 text-white border-red-400 shadow-lg shadow-red-950/80 animate-bounce'
-                    : 'bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-white border-red-500/40'
+                    : telemetryData.isBoxRequested
+                    ? 'bg-amber-500/90 text-neutral-950 border-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.5)] ring-1 ring-amber-400 animate-pulse font-black'
+                    : 'bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border-white/10 hover:border-amber-400/40'
                 }`}
               >
-                <Wrench className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                <Radio className={`w-3.5 h-3.5 shrink-0 ${telemetryData.isBoxRequested ? 'text-neutral-950 animate-pulse' : 'text-amber-400'}`} />
                 <span className="text-[9px] uppercase tracking-wider hidden xs:inline">
-                  {telemetryData.isInPit ? 'Boxes' : hasPuncture ? '¡BOX NOW!' : 'BOX'}
+                  {telemetryData.isInPit
+                    ? 'En Boxes'
+                    : hasPuncture
+                    ? '¡BOX NOW!'
+                    : telemetryData.isBoxRequested
+                    ? 'BOX: LISTO'
+                    : 'BOX'}
                 </span>
               </button>
             )}
@@ -565,7 +577,12 @@ export const HUD = React.memo<HUDProps>(({
             )}
             {telemetryData.pitPhase !== 'none' && (
               <div className="flex items-center justify-between text-[9px] font-bold tracking-wider uppercase pb-0.5">
-                {telemetryData.isPreparedPitStop ? (
+                {telemetryData.radioMessage ? (
+                  <span className={`${telemetryData.isPreparedPitStop ? 'text-emerald-400' : 'text-amber-400'} flex items-center gap-1 font-black`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${telemetryData.isPreparedPitStop ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-ping'} inline-block`} />
+                    {telemetryData.radioMessage}
+                  </span>
+                ) : telemetryData.isPreparedPitStop ? (
                   <span className="text-emerald-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
                     BOX PROGRAMADO · 2.8s - 3.3s

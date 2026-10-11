@@ -932,7 +932,7 @@ export class PitStopManager {
           tech.rightArmIK.elbow.rotation.set(0.3, 0, 0);
         }
         if (tech.toolMesh) {
-          const hipPos = tech.group.position.clone();
+          const hipPos = PitStopManager._sHipHangPos.copy(tech.group.position);
           hipPos.x += (i % 2 === 0 ? -0.22 : 0.22);
           hipPos.y += 0.62;
           tech.toolMesh.position.copy(hipPos);
@@ -1583,8 +1583,8 @@ export class PitStopManager {
       if (!this.hasTriggeredJackUpSound) {
         audio.triggerPneumaticJack(true);
         this.hasTriggeredJackUpSound = true;
-        particles.emitPneumaticBlast(new THREE.Vector3(this.pitBoxX + 2.4, 0.12, -110.5), new THREE.Vector3(0, 0.8, 0), 6);
-        particles.emitPneumaticBlast(new THREE.Vector3(this.pitBoxX - 2.4, 0.12, -110.5), new THREE.Vector3(0, 0.8, 0), 6);
+        particles.emitPneumaticBlast(PitStopManager._sTempV1.set(this.pitBoxX + 2.4, 0.12, -110.5), PitStopManager._sTempV2.set(0, 0.8, 0), 6);
+        particles.emitPneumaticBlast(PitStopManager._sTempV1.set(this.pitBoxX - 2.4, 0.12, -110.5), PitStopManager._sTempV2.set(0, 0.8, 0), 6);
       }
 
       const liftT = (t - 0.5) / 0.5;
@@ -2113,8 +2113,10 @@ export class PitStopManager {
             }
 
             // Both hands grip tire sides
-            gripL.copy(spare.position).add(new THREE.Vector3(-0.19, 0, 0));
-            gripR.copy(spare.position).add(new THREE.Vector3(0.19, 0, 0));
+            gripL.copy(spare.position);
+            gripL.x -= 0.19;
+            gripR.copy(spare.position);
+            gripR.x += 0.19;
             if (tech.leftArmIK && tech.rightArmIK) {
               this.solveTwoBoneIK(tech.rightArmIK, gripR, techTorsoQuat);
               this.solveTwoBoneIK(tech.leftArmIK, gripL, techTorsoQuat);
@@ -2274,8 +2276,10 @@ export class PitStopManager {
               this.updateGunBalancerCable(tech, tech.toolMesh.position);
             }
 
-            gripL.copy(spare.position).add(new THREE.Vector3(isLeft ? 0.19 : -0.19, 0, 0));
-            gripR.copy(spare.position).add(new THREE.Vector3(isLeft ? -0.19 : 0.19, 0, 0));
+            gripL.copy(spare.position);
+            gripL.x += (isLeft ? 0.19 : -0.19);
+            gripR.copy(spare.position);
+            gripR.x += (isLeft ? -0.19 : 0.19);
             if (tech.leftArmIK && tech.rightArmIK) {
               this.solveTwoBoneIK(tech.rightArmIK, gripR, techTorsoQuat);
               this.solveTwoBoneIK(tech.leftArmIK, gripL, techTorsoQuat);
@@ -2333,7 +2337,9 @@ export class PitStopManager {
               }
               carModel.setCenterlockNutSpin(i, -t * 150);
 
-              gripR.copy(gunTipPos).add(new THREE.Vector3(0, -0.06, isLeft ? 0.08 : -0.08));
+              gripR.copy(gunTipPos);
+              gripR.y -= 0.06;
+              gripR.z += (isLeft ? 0.08 : -0.08);
               gripL.copy(gunTipPos).addScaledVector(axleOutDir, 0.10);
             } else {
               // Nut is loose! Gun docks to hip/balancer, hands prepare to grip wheel
@@ -2343,8 +2349,10 @@ export class PitStopManager {
                 tech.toolMesh.quaternion.slerpQuaternions(hubQuat, tech.group.quaternion, dockT);
                 this.updateGunBalancerCable(tech, tech.toolMesh.position);
               }
-              gripR.copy(spindlePos).add(new THREE.Vector3(isLeft ? 0.20 : -0.20, 0, 0));
-              gripL.copy(spindlePos).add(new THREE.Vector3(isLeft ? -0.20 : 0.20, 0, 0));
+              gripR.copy(spindlePos);
+              gripR.x += (isLeft ? 0.20 : -0.20);
+              gripL.copy(spindlePos);
+              gripL.x += (isLeft ? -0.20 : 0.20);
             }
 
             if (tech.leftArmIK && tech.rightArmIK) {
@@ -2419,8 +2427,10 @@ export class PitStopManager {
               }
             }
 
-            gripR.copy(dismounted.position).add(new THREE.Vector3(isLeft ? 0.20 : -0.20, 0, 0));
-            gripL.copy(dismounted.position).add(new THREE.Vector3(isLeft ? -0.20 : 0.20, 0, 0));
+            gripR.copy(dismounted.position);
+            gripR.x += (isLeft ? 0.20 : -0.20);
+            gripL.copy(dismounted.position);
+            gripL.x += (isLeft ? -0.20 : 0.20);
             if (tech.leftArmIK && tech.rightArmIK) {
               this.solveTwoBoneIK(tech.rightArmIK, gripR, techTorsoQuat);
               this.solveTwoBoneIK(tech.leftArmIK, gripL, techTorsoQuat);
@@ -2493,8 +2503,10 @@ export class PitStopManager {
               }
             }
 
-            gripL.copy(spare.visible ? spare.position : spindlePos).add(new THREE.Vector3(isLeft ? -0.19 : 0.19, 0, 0));
-            gripR.copy(spare.visible ? spare.position : spindlePos).add(new THREE.Vector3(isLeft ? 0.19 : -0.19, 0, 0));
+            gripL.copy(spare.visible ? spare.position : spindlePos);
+            gripL.x += (isLeft ? -0.19 : 0.19);
+            gripR.copy(spare.visible ? spare.position : spindlePos);
+            gripR.x += (isLeft ? 0.19 : -0.19);
             if (tech.leftArmIK && tech.rightArmIK) {
               this.solveTwoBoneIK(tech.rightArmIK, gripR, techTorsoQuat);
               this.solveTwoBoneIK(tech.leftArmIK, gripL, techTorsoQuat);
@@ -2527,7 +2539,9 @@ export class PitStopManager {
               }
               carModel.setCenterlockNutSpin(i, t * 160);
 
-              gripR.copy(gunTipPos).add(new THREE.Vector3(0, -0.06, isLeft ? 0.08 : -0.08));
+              gripR.copy(gunTipPos);
+              gripR.y -= 0.06;
+              gripR.z += (isLeft ? 0.08 : -0.08);
               gripL.copy(spindlePos).addScaledVector(axleOutDir, 0.12);
               if (tech.leftArmIK && tech.rightArmIK) {
                 this.solveTwoBoneIK(tech.rightArmIK, gripR, techTorsoQuat);
@@ -2659,7 +2673,7 @@ export class PitStopManager {
         if (!this.hasTriggeredJackDownSound && fallRatio > 0.85) {
           audio.triggerPneumaticJack(false);
           this.hasTriggeredJackDownSound = true;
-          particles.emitPneumaticBlast(new THREE.Vector3(this.pitBoxX, 0.1, -110.5), new THREE.Vector3(0, 0.8, 0), 10);
+          particles.emitPneumaticBlast(PitStopManager._sTempV1.set(this.pitBoxX, 0.1, -110.5), PitStopManager._sTempV2.set(0, 0.8, 0), 10);
         }
       } else {
         // Touchdown: Fluid critically-damped suspension settle smoothly dissipating to 0.0 before launch

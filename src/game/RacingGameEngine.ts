@@ -761,8 +761,6 @@ export class RacingGameEngine {
 
   public requestPitStop(): void {
     if (this.pitStop.phase !== 'none') return;
-    this.pitStop.isBoxNotified = true;
-    playF1BoxRadioConfirmation();
     this.pitStop.cooldownTimer = 0;
 
     const { x, z } = this.physics.position;
@@ -771,27 +769,12 @@ export class RacingGameEngine {
     const inPitLane = isBeforePitWall || isInsidePitLane;
 
     if (inPitLane) {
+      this.pitStop.isBoxNotified = true;
+      playF1BoxRadioConfirmation();
       this.pitStop.startPitEntryAutopilot(this.physics, this.audio);
     } else {
-      this.physics.position.x = -65.0;
-      this.physics.position.y = 0.35;
-      this.physics.position.z = -114.5;
-      this.physics.prevPosition.x = this.physics.position.x;
-      this.physics.prevPosition.y = this.physics.position.y;
-      this.physics.prevPosition.z = this.physics.position.z;
-      this.physics.prevYaw = Math.PI / 2;
-      this.physics.yaw = Math.PI / 2;
-      this.physics.speed = 16.67;
-      this.physics.lateralSpeed = 0;
-      this.physics.angularVelocity = 0;
-      this.physics.pitch = 0;
-      this.physics.roll = 0;
-      this.pitStop.startPitEntryAutopilot(this.physics, this.audio);
-
-      this.cameraSystem.cameraPos.set(-71.0, 2.6, -114.5);
-      this.cameraSystem.cameraTarget.set(-60.0, 0.95, -114.5);
-      this.camera.position.copy(this.cameraSystem.cameraPos);
-      this.camera.lookAt(this.cameraSystem.cameraTarget);
+      // Out on track: toggle box call to notify team ahead of time (no jarring teleportation)
+      this.toggleBoxCall();
     }
   }
 
